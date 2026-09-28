@@ -1052,39 +1052,65 @@ function createAnswerKeyPdf(items) {
     const pageWidth = 612;
     const pageHeight = 792;
     const margin = 48;
-    const lineHeight = 14;
-    const maxChars = 92;
+    const contentWidth = pageWidth - margin * 2;
+    const lineHeight = 13;
+    const maxChars = 88;
     const pages = [];
-    let lines = [];
+    let content = [];
     let y = pageHeight - margin;
 
     function newPage() {
-        if (lines.length) {
-            pages.push(lines);
+        if (content.length) {
+            pages.push(content);
         }
-        lines = [];
+        content = [];
         y = pageHeight - margin;
     }
 
-    function addLine(text, fontSize = 10) {
-        if (y < margin) {
+    function addText(text, x = margin, fontSize = 10, font = "regular", color = "text") {
+        if (y < margin + 28) {
             newPage();
         }
-        lines.push({ text, fontSize, x: margin, y });
+        content.push({ type: "text", text, fontSize, font, color, x, y });
         y -= lineHeight;
     }
 
-    addLine("Windows Server 2022 Answer Key", 16);
-    addLine("DSD Reviewer Practice", 10);
-    y -= 8;
+    function addRule(color = "line") {
+        if (y < margin + 28) {
+            newPage();
+        }
+        content.push({ type: "line", x1: margin, y1: y, x2: pageWidth - margin, y2: y, color });
+        y -= 16;
+    }
+
+    function addAnswerBlock(item) {
+        const questionLines = wrapText(`${item.number}. ${item.question}`, maxChars);
+        const answerLines = wrapText(item.answer, maxChars - 16);
+        const blockHeight = (questionLines.length + answerLines.length + 1) * lineHeight + 12;
+
+        if (y - blockHeight < margin + 28) {
+            newPage();
+        }
+
+        questionLines.forEach((line, index) => {
+            addText(line, margin, 10, index === 0 ? "bold" : "regular", "text");
+        });
+
+        y -= 1;
+        addText("Correct answer:", margin + 14, 9.5, "bold", "success");
+        answerLines.forEach(line => addText(line, margin + 28, 9.5, "regular", "success"));
+        y -= 8;
+    }
+
+    content.push({ type: "rect", x: margin, y: pageHeight - margin - 26, width: 44, height: 26, color: "primary" });
+    content.push({ type: "text", text: "DSD", x: margin + 11, y: pageHeight - margin - 18, fontSize: 11, font: "bold", color: "white" });
+    content.push({ type: "text", text: "Windows Server 2022 Answer Key", x: margin + 58, y: pageHeight - margin - 4, fontSize: 18, font: "bold", color: "text" });
+    content.push({ type: "text", text: "Reviewer Practice | Questions with correct answers", x: margin + 58, y: pageHeight - margin - 22, fontSize: 9.5, font: "regular", color: "muted" });
+    y = pageHeight - margin - 48;
+    addRule("primary");
 
     items.forEach(item => {
-        const questionLines = wrapText(`${item.number}. ${item.question}`, maxChars);
-        const answerLines = wrapText(`Correct answer: ${item.answer}`, maxChars);
-
-        questionLines.forEach(line => addLine(line, 10));
-        answerLines.forEach(line => addLine(line, 10));
-        y -= 6;
+        addAnswerBlock(item);
     });
 
     newPage();
@@ -1117,16 +1143,17 @@ function buildPdfDocument(pages, pageWidth, pageHeight) {
     const objects = [
         "<< /Type /Catalog /Pages 2 0 R >>",
         "",
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"
     ];
     const kids = [];
 
     pages.forEach((pageLines, index) => {
-        const pageObjectNumber = 4 + index * 2;
+        const pageObjectNumber = 5 + index * 2;
         const contentObjectNumber = pageObjectNumber + 1;
         kids.push(`${pageObjectNumber} 0 R`);
-        objects[pageObjectNumber - 1] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`;
-        objects[contentObjectNumber - 1] = createPdfStream(pageLines);
+        objects[pageObjectNumber - 1] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`;
+        objects[contentObjectNumber - 1] = createPdfStream(pageLines, index + 1, pages.length, pageWidth);
     });
 
     objects[1] = `<< /Type /Pages /Kids [${kids.join(" ")}] /Count ${pages.length} >>`;
@@ -1149,13 +1176,44 @@ function buildPdfDocument(pages, pageWidth, pageHeight) {
     return pdf;
 }
 
-function createPdfStream(lines) {
-    const stream = lines.map(line => {
-        const text = escapePdfText(line.text);
-        return `BT /F1 ${line.fontSize} Tf ${line.x} ${line.y} Td (${text}) Tj ET`;
-    }).join("\n");
+function createPdfStream(items, pageNumber, totalPages, pageWidth) {
+    const footer = [
+        { type: "line", x1: 48, y1: 34, x2: pageWidth - 48, y2: 34, color: "line" },
+        { type: "text", text: `DSD Reviewer Practice`, x: 48, y: 20, fontSize: 8, font: "regular", color: "muted" },
+        { type: "text", text: `Page ${pageNumber} of ${totalPages}`, x: pageWidth - 102, y: 20, fontSize: 8, font: "regular", color: "muted" }
+    ];
+    const stream = [...items, ...footer].map(toPdfCommand).join("\n");
     const length = new TextEncoder().encode(`${stream}\n`).length;
     return `<< /Length ${length} >>\nstream\n${stream}\nendstream`;
+}
+
+function toPdfCommand(item) {
+    if (item.type === "line") {
+        const color = pdfColor(item.color);
+        return `q ${color.stroke} 0.8 w ${item.x1} ${item.y1} m ${item.x2} ${item.y2} l S Q`;
+    }
+
+    if (item.type === "rect") {
+        const color = pdfColor(item.color);
+        return `q ${color.fill} ${item.x} ${item.y} ${item.width} ${item.height} re f Q`;
+    }
+
+    const text = escapePdfText(item.text);
+    const font = item.font === "bold" ? "F2" : "F1";
+    const color = pdfColor(item.color).fill;
+    return `BT ${color} /${font} ${item.fontSize} Tf ${item.x} ${item.y} Td (${text}) Tj ET`;
+}
+
+function pdfColor(color) {
+    const colors = {
+        text: { fill: "0.09 0.13 0.17 rg", stroke: "0.09 0.13 0.17 RG" },
+        muted: { fill: "0.39 0.45 0.55 rg", stroke: "0.39 0.45 0.55 RG" },
+        primary: { fill: "0.06 0.42 0.74 rg", stroke: "0.06 0.42 0.74 RG" },
+        success: { fill: "0.13 0.53 0.37 rg", stroke: "0.13 0.53 0.37 RG" },
+        line: { fill: "0.86 0.90 0.94 rg", stroke: "0.86 0.90 0.94 RG" },
+        white: { fill: "1 1 1 rg", stroke: "1 1 1 RG" }
+    };
+    return colors[color] || colors.text;
 }
 
 function escapePdfText(value) {
