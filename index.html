@@ -769,6 +769,7 @@ const quizData = [
 
 let currentQuestion = 0;
 let score = 0;
+const shuffledQuizData = shuffleQuestions(quizData);
 
 const questionEl = document.getElementById("question");
 const optionsEl = document.getElementById("options");
@@ -777,11 +778,21 @@ const progressFillEl = document.getElementById("progress-fill");
 const scoreEl = document.getElementById("score");
 const nextBtn = document.getElementById("next-btn");
 
+function shuffleQuestions(questions) {
+    const shuffled = [...questions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const randomIndex = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[i]];
+    }
+    return shuffled;
+}
+
 function loadQuestion() {
-    const q = quizData[currentQuestion];
-    questionEl.innerText = q.q;
-    progressEl.innerText = `Question ${currentQuestion + 1}/${quizData.length}`;
-    progressFillEl.style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+    const q = shuffledQuizData[currentQuestion];
+    const questionText = q.q.replace(/^\d+\.\s*/, "");
+    questionEl.innerText = `${currentQuestion + 1}. ${questionText}`;
+    progressEl.innerText = `Question ${currentQuestion + 1}/${shuffledQuizData.length}`;
+    progressFillEl.style.width = `${((currentQuestion + 1) / shuffledQuizData.length) * 100}%`;
     optionsEl.innerHTML = "";
     nextBtn.classList.remove("show");
     nextBtn.style.removeProperty("display");
@@ -823,7 +834,7 @@ function selectOption(selected, correct) {
 
 function nextQuestion() {
     currentQuestion++;
-    if (currentQuestion < quizData.length) {
+    if (currentQuestion < shuffledQuizData.length) {
         loadQuestion();
     } else {
         showResults();
@@ -835,8 +846,8 @@ function showResults() {
     document.getElementById("quiz-body").innerHTML = `
         <div class="result-screen">
             <h2>Quiz Complete!</h2>
-            <div class="final-score">${score} / ${quizData.length}</div>
-            <p>Final percentage: <strong>${((score / quizData.length) * 100).toFixed(1)}%</strong></p>
+            <div class="final-score">${score} / ${shuffledQuizData.length}</div>
+            <p>Final percentage: <strong>${((score / shuffledQuizData.length) * 100).toFixed(1)}%</strong></p>
             <button class="restart-btn" onclick="location.reload()">Restart Quiz</button>
         </div>
     `;
