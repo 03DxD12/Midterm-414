@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Windows Server 2022 Interactive Quiz</title>
+    <style>
+        :root {
+            --bg: #edf3f8;
+            --surface: #ffffff;
+            --surface-soft: #f7fafc;
+            --text: #17212b;
+            --muted: #64748b;
+            --line: #dce6ef;
+            --primary: #0f6cbd;
+            --primary-dark: #0a4f8a;
+            --primary-soft: #e7f2fd;
+            --success: #21885f;
+            --success-soft: #e6f6ee;
+            --danger: #b42318;
+            --danger-soft: #fee9e7;
+            --shadow: 0 24px 60px rgba(22, 45, 72, 0.16);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            min-height: 100%;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100svh;
+            margin: 0;
+            padding: max(32px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                linear-gradient(135deg, rgba(15, 108, 189, 0.14), rgba(33, 136, 95, 0.12)),
+                var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        button {
+            font: inherit;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .quiz-container {
+            width: min(100%, 760px);
+            padding: 28px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(255, 255, 255, 0.78);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            animation: fadeUp 0.45s cubic-bezier(.2, .8, .2, 1) both;
+            overflow: hidden;
+        }
+
+        .quiz-title {
+            margin: 0 0 6px;
+            font-size: 1.45rem;
+            line-height: 1.2;
+            font-weight: 750;
+            letter-spacing: 0;
+        }
+
+        .quiz-subtitle {
+            margin: 0 0 22px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .progress-wrap {
+            min-width: 0;
+        }
+
+        .progress {
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            overflow: hidden;
+            background: #e8eef5;
+            border-radius: 8px;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            border-radius: inherit;
+            transition: width 0.35s ease;
+        }
+
+        .score {
+            min-width: 104px;
+            padding: 10px 14px;
+            color: var(--success);
+            background: var(--success-soft);
+            border: 1px solid rgba(33, 136, 95, 0.18);
+            border-radius: 8px;
+            font-weight: 750;
+            text-align: center;
+        }
+
+        .question-text {
+            margin: 0 0 22px;
+            color: var(--text);
+            font-size: 1.12rem;
+            font-weight: 650;
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+        }
+
+        .question-text.animate-in {
+            animation: fadeSlide 0.35s cubic-bezier(.2, .8, .2, 1) both;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            width: 100%;
+            min-height: 54px;
+            padding: 15px 17px;
+            color: #243241;
+            background: var(--surface-soft);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            text-align: left;
+            line-height: 1.45;
+            cursor: pointer;
+            overflow-wrap: anywhere;
+            opacity: 1;
+            transform: translateY(0);
+            transition:
+                background-color 0.2s ease,
+                border-color 0.2s ease,
+                box-shadow 0.2s ease,
+                color 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .option-btn.animate-in {
+            animation: optionIn 0.35s cubic-bezier(.2, .8, .2, 1) both;
+        }
+
+        .option-btn:hover:not([disabled]),
+        .option-btn:focus-visible:not([disabled]) {
+            color: var(--primary-dark);
+            background: var(--primary-soft);
+            border-color: rgba(15, 108, 189, 0.38);
+            box-shadow: 0 10px 24px rgba(15, 108, 189, 0.12);
+            outline: none;
+            transform: translateY(-2px);
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+        }
+
+        .option-btn.correct {
+            color: #0f5132 !important;
+            background: var(--success-soft) !important;
+            border-color: rgba(33, 136, 95, 0.44) !important;
+            font-weight: 750;
+            animation: correctPulse 0.45s ease;
+        }
+
+        .option-btn.wrong {
+            color: var(--danger) !important;
+            background: var(--danger-soft) !important;
+            border-color: rgba(180, 35, 24, 0.35) !important;
+            animation: wrongShake 0.35s ease;
+        }
+
+        .next-btn,
+        .restart-btn {
+            min-height: 50px;
+            padding: 14px 18px;
+            color: #ffffff;
+            background: var(--primary);
+            border: 0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 750;
+            cursor: pointer;
+            transition:
+                background-color 0.2s ease,
+                box-shadow 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .next-btn {
+            display: none;
+            width: 100%;
+            margin-top: 24px;
+        }
+
+        .next-btn.show {
+            display: block;
+            animation: fadeUp 0.25s ease both;
+        }
+
+        .next-btn:hover,
+        .restart-btn:hover,
+        .next-btn:focus-visible,
+        .restart-btn:focus-visible {
+            background: var(--primary-dark);
+            box-shadow: 0 12px 24px rgba(15, 108, 189, 0.24);
+            outline: none;
+            transform: translateY(-1px);
+        }
+
+        .result-screen {
+            padding: 12px 0 2px;
+            text-align: center;
+            animation: fadeUp 0.4s cubic-bezier(.2, .8, .2, 1) both;
+        }
+
+        .result-screen h2 {
+            margin: 0 0 10px;
+            font-size: 1.7rem;
+            letter-spacing: 0;
+        }
+
+        .result-screen p {
+            margin: 0 auto 22px;
+            max-width: 420px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .final-score {
+            display: inline-block;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            color: var(--success);
+            background: var(--success-soft);
+            border: 1px solid rgba(33, 136, 95, 0.18);
+            border-radius: 8px;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .restart-btn {
+            background: var(--success);
+        }
+
+        .restart-btn:hover,
+        .restart-btn:focus-visible {
+            background: #176c4a;
+            box-shadow: 0 12px 24px rgba(33, 136, 95, 0.2);
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes optionIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes correctPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(33, 136, 95, 0);
+            }
+            50% {
+                transform: scale(1.012);
+                box-shadow: 0 0 0 6px rgba(33, 136, 95, 0.12);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(33, 136, 95, 0);
+            }
+        }
+
+        @keyframes wrongShake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-4px);
+            }
+            75% {
+                transform: translateX(4px);
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                align-items: flex-start;
+                padding: max(22px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+            }
+
+            .quiz-container {
+                width: 100%;
+                padding: 24px;
+            }
+
+            .quiz-title {
+                font-size: 1.34rem;
+            }
+
+            .quiz-subtitle {
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            body {
+                align-items: flex-start;
+                padding: max(14px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+            }
+
+            .quiz-container {
+                padding: 18px;
+                box-shadow: 0 14px 36px rgba(22, 45, 72, 0.14);
+            }
+
+            .header {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin-bottom: 20px;
+                padding-bottom: 18px;
+            }
+
+            .score {
+                width: 100%;
+                padding: 9px 12px;
+            }
+
+            .quiz-title {
+                font-size: 1.25rem;
+            }
+
+            .quiz-subtitle {
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+
+            .question-text {
+                font-size: 1rem;
+                margin-bottom: 18px;
+            }
+
+            .options-container {
+                gap: 10px;
+            }
+
+            .option-btn {
+                min-height: 52px;
+                padding: 13px 14px;
+                font-size: 0.95rem;
+            }
+
+            .next-btn,
+            .restart-btn {
+                min-height: 52px;
+                padding: 14px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            body {
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+            }
+
+            .quiz-container {
+                padding: 14px;
+            }
+
+            .quiz-title {
+                font-size: 1.12rem;
+            }
+
+            .quiz-subtitle,
+            .progress,
+            .option-btn {
+                font-size: 0.88rem;
+            }
+
+            .question-text {
+                font-size: 0.95rem;
+                line-height: 1.48;
+            }
+
+            .score {
+                font-size: 0.92rem;
+            }
+        }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            body {
+                align-items: flex-start;
+                padding-top: max(10px, env(safe-area-inset-top));
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
+            }
+
+            .quiz-container {
+                padding: 16px;
+            }
+
+            .quiz-subtitle {
+                margin-bottom: 14px;
+            }
+
+            .header {
+                margin-bottom: 16px;
+                padding-bottom: 14px;
+            }
+
+            .question-text {
+                margin-bottom: 14px;
+            }
+
+            .options-container {
+                gap: 8px;
+            }
+
+            .option-btn {
+                min-height: 46px;
+                padding: 10px 14px;
+            }
+
+            .next-btn {
+                margin-top: 14px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container" id="quiz">
+    <h1 class="quiz-title">Windows Server 2022 Quiz</h1>
+    <p class="quiz-subtitle">Active Directory, DNS, server roles, and administration review.</p>
+    <div class="header">
+        <div class="progress-wrap">
+            <div class="progress" id="progress">Question 1/50</div>
+            <div class="progress-track" aria-hidden="true">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+        <div class="score" id="score">Score: 0</div>
+    </div>
+    <div id="quiz-body">
+        <div class="question-text" id="question">Loading...</div>
+        <div class="options-container" id="options"></div>
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question</button>
+    </div>
+</div>
+
+<script>
+const quizData = [
+    {
+        q: "1. An administrator wants to perform Domain Controller diagnostic tests. Which command is most appropriate?",
+        options: ["A. nslookup", "B. dcdiag", "C. Get-Date", "D. ipconfig"],
+        answer: 1
+    },
+    {
+        q: "2. An organization experiences repeated server failures but discovers that its backups have never been tested for restoration. What should the administrator prioritize?",
+        options: ["A. Disabling network services", "B. Testing backup restoration procedures", "C. Changing the desktop background", "D. Removing all user accounts"],
+        answer: 1
+    },
+    {
+        q: "3. Which principle states that users should receive only the permissions necessary to perform their assigned tasks?",
+        options: ["A. Network Dependency Principle", "B. Principle of Least Privilege", "C. Continuous Availability Principle", "D. Centralized Management Principle"],
+        answer: 1
+    },
+    {
+        q: "4. A company wants to reduce downtime when applying supported security updates to Windows Server 2022. Which feature could help?",
+        options: ["A. Reverse Lookup", "B. NetBIOS", "C. Disk Management", "D. Hotpatching"],
+        answer: 3
+    },
+    {
+        q: "5. A university wants to manage its Windows Server environment using different tools: one for installing roles, one for browser-based monitoring, one for automation, and one for remote administration from a client. Which combination is BEST?",
+        options: ["A. PowerShell - Server Manager - DNS - BIOS", "B. MMC - DHCP - BIOS - Disk Cleanup", "C. Server Manager - Windows Admin Center - PowerShell - RSAT", "D. RSAT - Windows Setup - Event Viewer - Paint"],
+        answer: 2
+    },
+    {
+        q: "6. A system administrator is designing an AD DS laboratory and wants the environment to be reliable. The administrator plans to configure a stable IP, install AD DS, promote the server, configure DNS, and verify the environment using hostname, ipconfig /all, nslookup, and dcdiag. Why is this approach strongest?",
+        options: ["A. It eliminates the need for DNS.", "B. It focuses only on installation speed.", "C. It combines preparation, deployment, service configuration, and verification rather than assuming successful installation means the environment works.", "D. It makes Domain Controllers unnecessary."],
+        answer: 2
+    },
+    {
+        q: "7. A hospital requires systems to remain secure and available while sensitive patient information is protected. Which combination best reflects the responsibilities of a system administrator?",
+        options: ["A. Security, monitoring, backup, access management, and maintenance", "B. Social media management", "C. Game development and animation", "D. Graphic design and multimedia production"],
+        answer: 0
+    },
+    {
+        q: "8. A Domain Controller is configured with an unstable or changing IP address. Users periodically experience problems locating domain services. What is the MOST likely underlying concern?",
+        options: ["A. Global Catalog automatically fixes all network configuration problems.", "B. Changing the server name would always solve the problem.", "C. Domain Controllers do not require IP addresses.", "D. Domain Controllers should normally have stable IP addressing because DNS and service discovery depend on reliable addressing."],
+        answer: 3
+    },
+    {
+        q: "9. A company has an administrator who will manage a server remotely and does not require local graphical tools. Which installation option would be more appropriate?",
+        options: ["A. Mobile OS", "B. Embedded OS", "C. Server Core", "D. Desktop Experience"],
+        answer: 2
+    },
+    {
+        q: "10. What is SYSVOL primarily used for?",
+        options: ["A. Hosting websites", "B. Sharing domain-wide files, including Group Policy-related data", "C. Storing only user passwords", "D. Storing personal photographs"],
+        answer: 1
+    },
+    {
+        q: "11. A user opens Microsoft Word, a web browser, and a music application simultaneously. Which OS function coordinates these running programs?",
+        options: ["A. File management", "B. Security management", "C. Device management", "D. Process management"],
+        answer: 3
+    },
+    {
+        q: "12. A client can resolve server.school.local to an IP address, but a reverse lookup of the IP address fails. Which DNS component should the administrator investigate?",
+        options: ["A. SYSVOL", "B. Global Catalog", "C. Reverse Lookup Zone", "D. Forward Lookup Zone"],
+        answer: 2
+    },
+    {
+        q: "13. A school has separate groups of users-students, faculty, and administrators-and wants different policies to be applied to each group. Which AD structure would BEST support this requirement?",
+        options: ["A. Physical processors", "B. Reverse Lookup Zones", "C. Hyper-V containers", "D. Organizational Units"],
+        answer: 3
+    },
+    {
+        q: "14. An administrator is preparing a new Windows Server 2022 installation. Which should be planned before deployment?",
+        options: ["A. Only the administrator's preferred browser", "B. Server name, IP configuration, disk layout, security, and backup strategy", "C. Only the keyboard layout", "D. Only the desktop wallpaper"],
+        answer: 1
+    },
+    {
+        q: "15. An administrator wants to test whether dc01.school.local can be resolved through DNS. Which command should be used?",
+        options: ["A. dcdiag", "B. Get-Service", "C. nslookup", "D. hostname"],
+        answer: 2
+    },
+    {
+        q: "16. A system administrator notices that a server's storage is nearly full because of increasing user data, logs, and backups. What should have been considered during server planning?",
+        options: ["A. The color of the GUI", "B. Storage growth and future capacity", "C. The number of desktop icons", "D. Only the current operating system size"],
+        answer: 1
+    },
+    {
+        q: "17. An administrator must choose between Server Core and Desktop Experience. The server will be located in a secure data center and managed remotely by experienced administrators. Which choice is most defensible?",
+        options: ["A. Embedded OS, because it is designed for dedicated devices", "B. Desktop Experience, because every server requires a GUI", "C. Server Core, because a graphical desktop is unnecessary for the intended administration method", "D. Mobile OS, because it uses fewer resources"],
+        answer: 2
+    },
+    {
+        q: "18. What is the primary purpose of Active Directory?",
+        options: ["A. To provide only internet access", "B. To replace the operating system", "C. To provide video editing services", "D. To centrally manage identities, computers, and network resources"],
+        answer: 3
+    },
+    {
+        q: "19. A company has ten Windows Server machines in different branches. The administrator wants to monitor their health from a browser without traveling to each location. Which tool is the best choice?",
+        options: ["A. BIOS Setup", "B. Windows Admin Center", "C. Command Prompt only", "D. Disk Management"],
+        answer: 1
+    },
+    {
+        q: "20. A university's IT department wants to reduce errors when performing the same configuration task on 50 servers. Which strategy would provide the strongest improvement?",
+        options: ["A. Allow each user to configure their own server.", "B. Reinstall all 50 servers.", "C. Perform the task manually on every server without documentation.", "D. Use automation and appropriate administration tools."],
+        answer: 3
+    },
+    {
+        q: "21. A Group Policy-related file needs to be shared among Domain Controllers as part of the domain environment. Which component is most directly associated with this function?",
+        options: ["A. Hyper-V", "B. SYSVOL", "C. Reverse Lookup Zone", "D. Global Catalog"],
+        answer: 1
+    },
+    {
+        q: "22. A university plans to deploy a Windows Server for 1,000 users. The proposed server meets the minimum CPU and RAM requirements, but the design includes limited storage and a slow network connection. What is the BEST evaluation of the proposal?",
+        options: ["A. It only needs a larger monitor.", "B. It should be reconsidered because production sizing must account for workload, storage, network traffic, and future growth.", "C. It is sufficient as long as Desktop Experience is selected.", "D. It is sufficient because minimum requirements are always enough."],
+        answer: 1
+    },
+    {
+        q: "23. An administrator wants to test whether dc01.school.local can be resolved through DNS. Which command should be used?",
+        options: ["A. Get-Date", "B. hostname", "C. nslookup", "D. dcdiag"],
+        answer: 2
+    },
+    {
+        q: "24. A system administrator notices that users frequently lose access to services whenever a server fails. Which architectural concern does this situation illustrate?",
+        options: ["A. Least privilege", "B. Process scheduling", "C. Single point of failure", "D. Data consistency"],
+        answer: 2
+    },
+    {
+        q: "25. An administrator uses school.local as the new laboratory domain name. Which NetBIOS name would normally be generated?",
+        options: ["A. SERVER", "B. SCHOOL.LOCAL", "C. LOCAL", "D. SCHOOL"],
+        answer: 3
+    },
+    {
+        q: "26. A university plans to automate regular reports, account creation, and service monitoring. Which characteristic of automation is most directly beneficial?",
+        options: ["A. It prevents administrators from managing servers.", "B. It saves time and reduces human error.", "C. It reduces consistency.", "D. It increases repetitive manual work."],
+        answer: 1
+    },
+    {
+        q: "27. An administrator notices that several applications are competing for limited RAM, causing slow performance. Which area should the administrator investigate first?",
+        options: ["A. DNS delegation", "B. User interface design", "C. File naming", "D. Memory management"],
+        answer: 3
+    },
+    {
+        q: "28. During a new AD DS deployment, the wizard asks whether DNS Server and Global Catalog should be selected. For a typical laboratory configuration, what is the appropriate action?",
+        options: ["A. Remove both and configure them later.", "B. Select only Global Catalog and remove DNS.", "C. Keep both selected.", "D. Disable both."],
+        answer: 2
+    },
+    {
+        q: "29. A system administrator is documenting the server's IP address, network diagram, backup schedule, and maintenance history. Which responsibility is being performed?",
+        options: ["A. Process management", "B. Virtualization", "C. Documentation", "D. Application development"],
+        answer: 2
+    },
+    {
+        q: "30. A company wants its administrators to manage servers efficiently while minimizing repetitive tasks. Which combination BEST supports the goal?",
+        options: ["A. Manual configuration without documentation", "B. PowerShell for automation and Windows Admin Center for centralized management", "C. Only a desktop operating system", "D. Only physical access to each server"],
+        answer: 1
+    },
+    {
+        q: "31. A university's five Windows Servers support AD DS, DNS, DHCP, file storage, and the LMS. The administrator wants one browser-based dashboard to monitor server health and security. Which solution BEST fits the requirement?",
+        options: ["A. hostname", "B. Windows Admin Center", "C. nslookup", "D. MMC Event Viewer only"],
+        answer: 1
+    },
+    {
+        q: "32. A company wants to ensure that employees cannot access confidential folders unrelated to their jobs. Which administrative practice best addresses the situation?",
+        options: ["A. Disable user accounts.", "B. Apply the Principle of Least Privilege.", "C. Remove all shared folders.", "D. Give all employees administrator privileges."],
+        answer: 1
+    },
+    {
+        q: "33. A system administrator notices that a server is slow. CPU usage is normal, but memory utilization is consistently high and disk activity is excessive. Which conclusion is most reasonable?",
+        options: ["A. The administrator should immediately replace the network adapter.", "B. The server should automatically be converted to Server Core.", "C. The administrator should investigate memory and storage performance rather than assuming the CPU is the problem.", "D. DNS is always responsible for high disk activity."],
+        answer: 2
+    },
+    {
+        q: "34. A small office wants a Windows Server installation with a graphical interface because staff need to perform local GUI-based administrative tasks. Which option should be selected?",
+        options: ["A. Server Core", "B. Desktop Experience", "C. Distributed OS", "D. Real-Time OS"],
+        answer: 1
+    },
+    {
+        q: "35. An administrator gives every employee full administrative privileges because 'it is easier to manage.' Which evaluation is MOST appropriate?",
+        options: ["A. The approach creates unnecessary security risk and violates least-privilege principles.", "B. The approach improves security.", "C. The approach follows least privilege.", "D. The approach is required for file sharing."],
+        answer: 0
+    },
+    {
+        q: "36. A new laboratory domain produces a warning that DNS delegation cannot be created. The administrator is creating an internal domain such as school.local. What should the administrator do?",
+        options: ["A. Remove Active Directory.", "B. Leave Create DNS delegation unchecked.", "C. Cancel the entire installation.", "D. Check Create DNS delegation."],
+        answer: 1
+    },
+    {
+        q: "37. A company experiences a ransomware incident and discovers that backups exist but have never been tested. Which conclusion is most appropriate?",
+        options: ["A. Backups are unnecessary when antivirus software is installed.", "B. Backup creation alone guarantees successful recovery.", "C. The problem is caused only by insufficient RAM.", "D. Backup integrity and restoration procedures should be regularly tested."],
+        answer: 3
+    },
+    {
+        q: "38. Which DNS lookup resolves a hostname into an IP address?",
+        options: ["A. Domain lookup", "B. Reverse lookup", "C. Forward lookup", "D. Forest lookup"],
+        answer: 2
+    },
+    {
+        q: "39. An administrator installs a server without documenting its IP address, installed applications, backup schedule, or configuration. Six months later, another administrator must troubleshoot. What is the most likely consequence?",
+        options: ["A. Security risks disappear.", "B. Knowledge transfer and maintenance become more difficult.", "C. Troubleshooting becomes faster.", "D. Server performance automatically improves."],
+        answer: 1
+    },
+    {
+        q: "40. What is the primary purpose of Windows Admin Center?",
+        options: ["A. Creating operating system installation media", "B. Replacing Active Directory", "C. Installing only desktop applications", "D. Centralized browser-based management of Windows servers and computers"],
+        answer: 3
+    },
+    {
+        q: "41. An administrator needs to create accounts for 500 newly enrolled students. Performing the task manually through graphical tools would take considerable time. Which approach is most efficient?",
+        options: ["A. Create a new forest for every student.", "B. Restart the Domain Controller repeatedly.", "C. Use Reverse Lookup Zones.", "D. Use PowerShell to automate account creation."],
+        answer: 3
+    },
+    {
+        q: "42. An administrator needs to identify why a network service stopped working. Which troubleshooting approach is most appropriate?",
+        options: ["A. Immediately reinstall the operating system", "B. Replace all hardware immediately", "C. Identify the problem, gather information, determine causes, test solutions, and verify the result", "D. Ignore the problem until users stop complaining"],
+        answer: 2
+    },
+    {
+        q: "43. After installing AD DS, Server Manager displays a notification allowing the administrator to promote the server. What does promotion accomplish?",
+        options: ["A. It creates a virtual machine automatically.", "B. It turns the prepared server into a Domain Controller.", "C. It converts the server into a client computer.", "D. It removes DNS."],
+        answer: 1
+    },
+    {
+        q: "44. A server administrator needs to repeatedly create hundreds of student accounts. Which approach would most efficiently reduce repetitive manual work?",
+        options: ["A. Creating each account through separate GUI windows only", "B. Reinstalling Windows Server", "C. Using PowerShell automation", "D. Restarting the server after every account"],
+        answer: 2
+    },
+    {
+        q: "45. What is the role of the Global Catalog?",
+        options: ["A. It provides a searchable partial representation of objects across the forest.", "B. It installs Windows Server.", "C. It replaces the Domain Controller.", "D. It assigns IP addresses to clients."],
+        answer: 0
+    },
+    {
+        q: "46. A university's enrollment server suddenly becomes unavailable. The administrator first checks server health, running services, and recent events. Which responsibility is being demonstrated?",
+        options: ["A. Software development", "B. Graphic design", "C. Database programming only", "D. Performance monitoring and troubleshooting"],
+        answer: 3
+    },
+    {
+        q: "47. What is Active Directory Domain Services (AD DS)?",
+        options: ["A. A hardware virtualization processor", "B. A type of network cable", "C. A Windows Server role that provides directory services", "D. A desktop application"],
+        answer: 2
+    },
+    {
+        q: "48. An organization wants administrators to manage Active Directory from a Windows client computer without logging directly into the server. Which technology is most appropriate?",
+        options: ["A. Remote Server Administration Tools (RSAT)", "B. Windows Setup", "C. BIOS", "D. Server Core"],
+        answer: 0
+    },
+    {
+        q: "49. Which Windows Server installation option provides a traditional graphical user interface?",
+        options: ["A. Command Server", "B. Minimal Core", "C. Server Core", "D. Desktop Experience"],
+        answer: 3
+    },
+    {
+        q: "50. What is the minimum system partition size identified in the provided Windows Server 2022 material?",
+        options: ["A. 64 GB", "B. 24 GB", "C. 32 GB", "D. 16 GB"],
+        answer: 2
+    }
+];
+
+let currentQuestion = 0;
+let score = 0;
+
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const progressEl = document.getElementById("progress");
+const progressFillEl = document.getElementById("progress-fill");
+const scoreEl = document.getElementById("score");
+const nextBtn = document.getElementById("next-btn");
+
+function loadQuestion() {
+    const q = quizData[currentQuestion];
+    questionEl.innerText = q.q;
+    progressEl.innerText = `Question ${currentQuestion + 1}/${quizData.length}`;
+    progressFillEl.style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+    optionsEl.innerHTML = "";
+    nextBtn.classList.remove("show");
+    nextBtn.style.removeProperty("display");
+
+    questionEl.classList.remove("animate-in");
+    void questionEl.offsetWidth;
+    questionEl.classList.add("animate-in");
+
+    q.options.forEach((opt, index) => {
+        const btn = document.createElement("button");
+        btn.classList.add("option-btn", "animate-in");
+        btn.style.animationDelay = `${index * 0.06}s`;
+        btn.innerText = opt;
+        btn.onclick = () => selectOption(index, q.answer);
+        optionsEl.appendChild(btn);
+    });
+}
+
+function selectOption(selected, correct) {
+    const buttons = optionsEl.children;
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = true;
+        if (i === correct) {
+            buttons[i].classList.add("correct");
+        }
+        if (i === selected && selected !== correct) {
+            buttons[i].classList.add("wrong");
+        }
+    }
+    
+    if (selected === correct) {
+        score++;
+        scoreEl.innerText = `Score: ${score}`;
+    }
+
+    nextBtn.style.removeProperty("display");
+    nextBtn.classList.add("show");
+}
+
+function nextQuestion() {
+    currentQuestion++;
+    if (currentQuestion < quizData.length) {
+        loadQuestion();
+    } else {
+        showResults();
+    }
+}
+
+function showResults() {
+    progressFillEl.style.width = "100%";
+    document.getElementById("quiz-body").innerHTML = `
+        <div class="result-screen">
+            <h2>Quiz Complete!</h2>
+            <div class="final-score">${score} / ${quizData.length}</div>
+            <p>Final percentage: <strong>${((score / quizData.length) * 100).toFixed(1)}%</strong></p>
+            <button class="restart-btn" onclick="location.reload()">Restart Quiz</button>
+        </div>
+    `;
+}
+
+loadQuestion();
+</script>
+
+</body>
+</html>
