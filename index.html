@@ -306,6 +306,53 @@
             box-shadow: 0 12px 24px rgba(33, 136, 95, 0.2);
         }
 
+        .download-panel {
+            display: grid;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+        }
+
+        .download-label {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .download-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .download-btn {
+            min-height: 46px;
+            padding: 12px 14px;
+            color: var(--primary-dark);
+            background: var(--primary-soft);
+            border: 1px solid rgba(15, 108, 189, 0.22);
+            border-radius: 8px;
+            font-size: 0.94rem;
+            font-weight: 750;
+            cursor: pointer;
+            transition:
+                background-color 0.2s ease,
+                border-color 0.2s ease,
+                box-shadow 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .download-btn:hover,
+        .download-btn:focus-visible {
+            background: #dceefd;
+            border-color: rgba(15, 108, 189, 0.38);
+            box-shadow: 0 10px 22px rgba(15, 108, 189, 0.12);
+            outline: none;
+            transform: translateY(-1px);
+        }
+
         .quiz-footer {
             margin-top: 24px;
             padding-top: 16px;
@@ -452,9 +499,14 @@
             }
 
             .next-btn,
-            .restart-btn {
+            .restart-btn,
+            .download-btn {
                 min-height: 52px;
                 padding: 14px;
+            }
+
+            .download-panel {
+                margin-top: 20px;
             }
         }
 
@@ -497,6 +549,10 @@
 
             .score {
                 font-size: 0.92rem;
+            }
+
+            .download-actions {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -571,6 +627,13 @@
         <div class="question-text" id="question">Loading...</div>
         <div class="options-container" id="options"></div>
         <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question</button>
+    </div>
+    <div class="download-panel" aria-label="Download answer key">
+        <p class="download-label">Download answer key</p>
+        <div class="download-actions">
+            <button class="download-btn" type="button" onclick="downloadAnswerKeyHtml()">HTML</button>
+            <button class="download-btn" type="button" onclick="downloadAnswerKeyPdf()">PDF</button>
+        </div>
     </div>
     <footer class="quiz-footer">DSD Reviewer Practice</footer>
 </div>
@@ -913,6 +976,194 @@ function showResults() {
             <button class="restart-btn" onclick="location.reload()">Restart Quiz</button>
         </div>
     `;
+}
+
+function getAnswerKeyItems() {
+    return quizData.map((item, index) => ({
+        number: index + 1,
+        question: item.q.replace(/^\d+\.\s*/, ""),
+        answer: item.options[item.answer]
+    }));
+}
+
+function downloadAnswerKeyHtml() {
+    const items = getAnswerKeyItems();
+    const rows = items.map(item => `
+        <li>
+            <p><strong>${item.number}. ${escapeHtml(item.question)}</strong></p>
+            <p>Correct answer: ${escapeHtml(item.answer)}</p>
+        </li>
+    `).join("");
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSD Windows Server 2022 Answer Key</title>
+    <style>
+        body { margin: 0; padding: 32px; font-family: Arial, sans-serif; color: #17212b; background: #f6f9fc; line-height: 1.5; }
+        main { max-width: 900px; margin: 0 auto; padding: 28px; background: #ffffff; border: 1px solid #dce6ef; border-radius: 8px; }
+        h1 { margin: 0 0 8px; font-size: 28px; }
+        .brand { color: #0f6cbd; font-weight: 700; }
+        ol { list-style: none; padding-left: 0; }
+        li { margin-bottom: 18px; }
+        p { margin: 0 0 6px; }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Windows Server 2022 Answer Key</h1>
+        <p class="brand">DSD Reviewer Practice</p>
+        <ol>${rows}</ol>
+    </main>
+</body>
+</html>`;
+    downloadBlob("dsd-windows-server-2022-answer-key.html", "text/html", html);
+}
+
+function downloadAnswerKeyPdf() {
+    const items = getAnswerKeyItems();
+    const pdf = createAnswerKeyPdf(items);
+    downloadBlob("dsd-windows-server-2022-answer-key.pdf", "application/pdf", pdf);
+}
+
+function downloadBlob(filename, mimeType, contents) {
+    const blob = new Blob([contents], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function escapeHtml(value) {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function createAnswerKeyPdf(items) {
+    const pageWidth = 612;
+    const pageHeight = 792;
+    const margin = 48;
+    const lineHeight = 14;
+    const maxChars = 92;
+    const pages = [];
+    let lines = [];
+    let y = pageHeight - margin;
+
+    function newPage() {
+        if (lines.length) {
+            pages.push(lines);
+        }
+        lines = [];
+        y = pageHeight - margin;
+    }
+
+    function addLine(text, fontSize = 10) {
+        if (y < margin) {
+            newPage();
+        }
+        lines.push({ text, fontSize, x: margin, y });
+        y -= lineHeight;
+    }
+
+    addLine("Windows Server 2022 Answer Key", 16);
+    addLine("DSD Reviewer Practice", 10);
+    y -= 8;
+
+    items.forEach(item => {
+        const questionLines = wrapText(`${item.number}. ${item.question}`, maxChars);
+        const answerLines = wrapText(`Correct answer: ${item.answer}`, maxChars);
+
+        questionLines.forEach(line => addLine(line, 10));
+        answerLines.forEach(line => addLine(line, 10));
+        y -= 6;
+    });
+
+    newPage();
+    return buildPdfDocument(pages, pageWidth, pageHeight);
+}
+
+function wrapText(text, maxChars) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let line = "";
+
+    words.forEach(word => {
+        const testLine = line ? `${line} ${word}` : word;
+        if (testLine.length > maxChars && line) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = testLine;
+        }
+    });
+
+    if (line) {
+        lines.push(line);
+    }
+    return lines;
+}
+
+function buildPdfDocument(pages, pageWidth, pageHeight) {
+    const encoder = new TextEncoder();
+    const objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    ];
+    const kids = [];
+
+    pages.forEach((pageLines, index) => {
+        const pageObjectNumber = 4 + index * 2;
+        const contentObjectNumber = pageObjectNumber + 1;
+        kids.push(`${pageObjectNumber} 0 R`);
+        objects[pageObjectNumber - 1] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`;
+        objects[contentObjectNumber - 1] = createPdfStream(pageLines);
+    });
+
+    objects[1] = `<< /Type /Pages /Kids [${kids.join(" ")}] /Count ${pages.length} >>`;
+
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+
+    objects.forEach((object, index) => {
+        offsets.push(encoder.encode(pdf).length);
+        pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    });
+
+    const xrefOffset = encoder.encode(pdf).length;
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += "0000000000 65535 f \n";
+    for (let i = 1; i < offsets.length; i++) {
+        pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+    }
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return pdf;
+}
+
+function createPdfStream(lines) {
+    const stream = lines.map(line => {
+        const text = escapePdfText(line.text);
+        return `BT /F1 ${line.fontSize} Tf ${line.x} ${line.y} Td (${text}) Tj ET`;
+    }).join("\n");
+    const length = new TextEncoder().encode(`${stream}\n`).length;
+    return `<< /Length ${length} >>\nstream\n${stream}\nendstream`;
+}
+
+function escapePdfText(value) {
+    return value
+        .replace(/[^\x20-\x7E]/g, "")
+        .replace(/\\/g, "\\\\")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)");
 }
 
 loadQuestion();

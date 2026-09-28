@@ -14,6 +14,7 @@ The interface includes a simple DSD brand mark and footer for a clean reviewer p
 - Shuffled questions on every reload
 - Correct and wrong answer feedback
 - Score tracking
+- Downloadable answer key in HTML or PDF format
 - Animated progress bar
 - Smooth and clean responsive design
 - DSD logo mark and footer branding
