@@ -65,6 +65,32 @@
             overflow: hidden;
         }
 
+        .brand-header {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .brand-mark {
+            display: grid;
+            flex: 0 0 48px;
+            width: 48px;
+            height: 48px;
+            place-items: center;
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            border-radius: 8px;
+            box-shadow: 0 12px 24px rgba(15, 108, 189, 0.2);
+            font-size: 0.9rem;
+            font-weight: 850;
+            letter-spacing: 0;
+        }
+
+        .brand-copy {
+            min-width: 0;
+        }
+
         .quiz-title {
             margin: 0 0 6px;
             font-size: 1.45rem;
@@ -74,7 +100,7 @@
         }
 
         .quiz-subtitle {
-            margin: 0 0 22px;
+            margin: 0;
             color: var(--muted);
             font-size: 0.95rem;
         }
@@ -280,6 +306,16 @@
             box-shadow: 0 12px 24px rgba(33, 136, 95, 0.2);
         }
 
+        .quiz-footer {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 650;
+            text-align: center;
+        }
+
         @keyframes fadeUp {
             from {
                 opacity: 0;
@@ -354,10 +390,6 @@
             .quiz-title {
                 font-size: 1.34rem;
             }
-
-            .quiz-subtitle {
-                margin-bottom: 20px;
-            }
         }
 
         @media (max-width: 560px) {
@@ -369,6 +401,18 @@
             .quiz-container {
                 padding: 18px;
                 box-shadow: 0 14px 36px rgba(22, 45, 72, 0.14);
+            }
+
+            .brand-header {
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+
+            .brand-mark {
+                flex-basis: 44px;
+                width: 44px;
+                height: 44px;
+                font-size: 0.82rem;
             }
 
             .header {
@@ -424,6 +468,18 @@
                 padding: 14px;
             }
 
+            .brand-header {
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .brand-mark {
+                flex-basis: 40px;
+                width: 40px;
+                height: 40px;
+                font-size: 0.78rem;
+            }
+
             .quiz-title {
                 font-size: 1.12rem;
             }
@@ -455,7 +511,7 @@
                 padding: 16px;
             }
 
-            .quiz-subtitle {
+            .brand-header {
                 margin-bottom: 14px;
             }
 
@@ -495,8 +551,13 @@
 <body>
 
 <div class="quiz-container" id="quiz">
-    <h1 class="quiz-title">Windows Server 2022 Quiz</h1>
-    <p class="quiz-subtitle">Active Directory, DNS, server roles, and administration review.</p>
+    <div class="brand-header">
+        <div class="brand-mark" aria-hidden="true">DSD</div>
+        <div class="brand-copy">
+            <h1 class="quiz-title">Windows Server 2022 Quiz</h1>
+            <p class="quiz-subtitle">Active Directory, DNS, server roles, and administration review.</p>
+        </div>
+    </div>
     <div class="header">
         <div class="progress-wrap">
             <div class="progress" id="progress">Question 1/50</div>
@@ -511,6 +572,7 @@
         <div class="options-container" id="options"></div>
         <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question</button>
     </div>
+    <footer class="quiz-footer">DSD Reviewer Practice</footer>
 </div>
 
 <script>

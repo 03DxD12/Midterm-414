@@ -6,6 +6,8 @@ This project is an offline reviewer and practice quiz for Windows Server 2022 to
 
 The quiz is built as a single `index.html` file, so it can be opened directly in a browser without internet access.
 
+The interface includes a simple DSD brand mark and footer for a clean reviewer practice layout.
+
 ## Features
 
 - 50-question Windows Server 2022 reviewer
@@ -14,6 +16,7 @@ The quiz is built as a single `index.html` file, so it can be opened directly in
 - Score tracking
 - Animated progress bar
 - Smooth and clean responsive design
+- DSD logo mark and footer branding
 - Mobile-friendly layout for Android and Apple devices
 - Fully offline-ready
 
